@@ -1,6 +1,6 @@
 const express = require('express')
 const cors = require('cors')
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const app = express();
 const port = process.env.PORT || 5000;
 
@@ -30,10 +30,16 @@ async function run() {
     await client.connect();
     const userCollection = await client.db("pracDb").collection('items');
     
-    app.get('/products',async (req, res) =>{
+    app.get('/products', async (req, res) =>{
       const query = {};
       const cursor = userCollection.find(query);
-      const pro = await cursor.toArrry()
+      const pro = await cursor.toArray();
+      res.send(pro)
+    })
+    app.get('/products/:id', async (req, res) =>{
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) }
+      const result = await userCollection.findOne(query);
       res.send(result)
     })
 
@@ -43,6 +49,33 @@ async function run() {
        res.send(result)
        console.log(result)
     })
+
+    app.put('/products/:id', async(req, res) =>{
+      const id = req.params.id;
+      const filter = {_id: new ObjectId(id)}
+      const updatedProduct = req.body;
+      const option = {upsert: true}
+      const updateDoc = {
+        $set:{
+          name: updatedProduct.name,
+          photoURL: updatedProduct.photoURL,
+          price: updatedProduct.price,
+          quantity: updatedProduct.quantity
+        }
+      }
+      const result = await userCollection.updateOne(filter, updateDoc, option)
+      res.send(result)
+    })
+
+    app.delete('/products/:id', async (req, res)=>{
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) }
+      const result = await userCollection.deleteOne(query);
+      res.send(result);
+    })
+
+    
+
   } finally {
     
     // await client.close();
